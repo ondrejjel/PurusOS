@@ -1,6 +1,6 @@
 ENTRY(Reset_Handler)
 
-/* Specify the exact memory areas for the STM32F411CE */
+/* Specify the exact memory areas for the STM32F411XE */
 MEMORY
 {
     FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K  /* 512 KB True Flash */
