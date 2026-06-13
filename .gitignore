@@ -1,0 +1,49 @@
+# Build directory
+
+build/*
+!build/.gitkeep
+
+# Object files
+
+*.o
+*.obj
+
+# Dependency files
+
+*.d
+
+# Static libraries
+
+*.a
+
+# Linker and listing outputs
+
+*.map
+*.lst
+
+# Firmware images
+
+*.elf
+*.axf
+*.bin
+*.hex
+
+# Logs
+
+*.log
+
+# Temporary editor files
+
+*~
+*.swp
+*.swo
+
+# Core dumps
+
+core
+core.*
+
+# OS files
+
+.DS_Store
+Thumbs.db
