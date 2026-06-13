@@ -3,7 +3,7 @@ ENTRY(Reset_Handler)
 /* Specify the exact memory areas for the STM32F411XC */
 MEMORY
 {
-    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 256K  /* 512 KB True Flash */
+    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 256K  /* 256 KB True Flash */
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K  /* 128 KB Total SRAM */
 }
 
