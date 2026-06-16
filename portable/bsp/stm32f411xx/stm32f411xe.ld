@@ -1,6 +1,6 @@
 ENTRY(Reset_Handler)
 
-/* Specify the exact memory areas for the STM32F411XE */
+/* Specify the exact memory areas for the STM32F411xE */
 MEMORY
 {
     FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K  /* 512 KB True Flash */
@@ -28,23 +28,7 @@ SECTIONS
         *(.text*)
         *(.rodata)
         *(.rodata*)
-        *(.glue_7)   /* ARM to Thumb interworking */
-        *(.glue_7t)  /* Thumb to ARM interworking */
-
         . = ALIGN(4);
-    } > FLASH
-
-    /* ARM Magic Tables for Stack Unwinding & Debugging */
-    .ARM.extab :
-    {
-        *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > FLASH
-
-    .ARM.exidx :
-    {
-        __exidx_start = .;
-        *(.ARM.exidx* .gnu.linkonce.armextab.*)
-        __exidx_end = .;
     } > FLASH
 
     /* Pointer used by startup to find initialization values for .data */
@@ -87,7 +71,16 @@ SECTIONS
         . = . + _min_stack_size;
         . = ALIGN(8);
     } > RAM
+
+    /* Discard unwanted compilation sections */
+    /DISCARD/ :
+    {
+        *(.ARM.exidx*)
+        *(.ARM.extab*)
+        *(.glue_7*)
+        *(.glue_7t)
+    }
 }
 
-/* Safety RAM overflow check*/
+/* Safety RAM overflow check */
 ASSERT(_estack >= _end, "Error: Memory region RAM overflowed with code/data symbols!")
