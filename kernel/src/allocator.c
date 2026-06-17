@@ -34,11 +34,11 @@ size_t x_pu_get_mempool_size(void) {
 }
 
 // Checks if the aligned requested bytes fit within the remaining pool capacity
-static bool check_fit_ram(size_t aligned_bytes) {
-    size_t total_pool_size = x_pu_get_mempool_size();
+static bool check_fit_ram(size_t alignedBytes) {
+    size_t totalPoolSize = x_pu_get_mempool_size();
 
     // Check if the current index plus requested size exceeds the overall array bounds
-    if (memoryIndex + aligned_bytes > total_pool_size) {
+    if (memoryIndex + alignedBytes > totalPoolSize) {
         return false; // Array overflow prevented
     }
     return true;
@@ -49,18 +49,18 @@ Arena_t x_pu_alloc_arena(size_t requested_bytes) {
     Arena_t arena = {NULL, NULL};
 
     // Enforce 8-byte alignment required by ARM ABI
-    size_t aligned_bytes = (requested_bytes + 7) & ~(size_t)7;
+    size_t alignedBytes = (requested_bytes + 7) & ~(size_t)7;
 
-    if (check_fit_ram(aligned_bytes)) {
+    if (check_fit_ram(alignedBytes)) {
         // Base address of the underlying storage array
-        uint8_t* pool_base = get_ram_start_ptr();
+        uint8_t* poolBase = get_ram_start_ptr();
 
         // Assign the boundaries of the sub-arena relative to the array base and current offset
-        arena.stackBottom = (void*)(pool_base + memoryIndex);
-        arena.stackTop    = (void*)(pool_base + memoryIndex + aligned_bytes);
+        arena.stackBottom = (void*)(poolBase + memoryIndex);
+        arena.stackTop    = (void*)(poolBase + memoryIndex + alignedBytes);
 
         // Advance the index offset to reserve the array block
-        memoryIndex += aligned_bytes;
+        memoryIndex += alignedBytes;
     }
 
     return arena;
