@@ -2,57 +2,65 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* A temporary arena allocator
- * that allocates a requested
- * number of bytes and returns
- * both bottom and top addresses.
+/* A bounded arena allocator that sub-allocates fixed-size
+ * arenas out of the main task memory pool (.mempool)
  */
 
-// Use size_t for tracking offsets and sizes safely across architectures
+// Global tracking offset within the main memory pool array
 static size_t memoryIndex = 0;
 
-extern void* ramStart; // Placeholder for valid linker variables
-extern void* ramEnd;
+// Linker script markers defining the absolute boundaries of the memory pool
+extern uint32_t _smempool;
+extern uint32_t _emempool;
 
 typedef struct Arena_t {
-    void* stackBottom; //stack bounds
-    void* stackTop;
+    void* stackBottom; // Lowest address of this sub-allocated arena
+    void* stackTop;    // Highest address (limit) of this sub-allocated arena
 } Arena_t;
 
-// Helper to cast void* to a byte pointer for proper arithmetic
+// Returns a pointer to the start of the memory pool array
 static inline uint8_t* get_ram_start_ptr(void) {
-    return (uint8_t*)ramStart;
+    return (uint8_t*)&_smempool;
 }
 
+// Returns a pointer to the end of the memory pool array
 static inline uint8_t* get_ram_end_ptr(void) {
-    return (uint8_t*)ramEnd;
+    return (uint8_t*)&_emempool;
 }
 
-// Checks if the already-aligned number of bytes fits into the RAM
-static bool check_fit_ram(size_t aligned_bytes) {
-    uint8_t* current_ptr = get_ram_start_ptr() + memoryIndex;
+// Calculates the total pool capacity directly from the linker symbols
+size_t x_pu_get_mempool_size(void) {
+    return (size_t)(get_ram_end_ptr() - get_ram_start_ptr());
+}
 
-    // Check for overflow and bound limits
-    if (current_ptr + aligned_bytes > get_ram_end_ptr()) {
-        return false; // Fail: doesn't fit
+// Checks if the aligned requested bytes fit within the remaining pool capacity
+static bool check_fit_ram(size_t aligned_bytes) {
+    size_t total_pool_size = x_pu_get_mempool_size();
+
+    // Check if the current index plus requested size exceeds the overall array bounds
+    if (memoryIndex + aligned_bytes > total_pool_size) {
+        return false; // Array overflow prevented
     }
     return true;
 }
 
-// Allocate arena and return bottom and top bounds
+// Allocate a sub-arena from the main pool block
 Arena_t x_pu_alloc_arena(size_t requested_bytes) {
-    Arena_t arena = {NULL, NULL}; // Explicitly zero out both pointers
+    Arena_t arena = {NULL, NULL};
 
-    // 8-byte alignment calculation done once here
+    // Enforce 8-byte alignment required by ARM ABI
     size_t aligned_bytes = (requested_bytes + 7) & ~(size_t)7;
 
     if (check_fit_ram(aligned_bytes)) {
-        uint8_t* start = get_ram_start_ptr() + memoryIndex;
+        // Base address of the underlying storage array
+        uint8_t* pool_base = get_ram_start_ptr();
 
-        arena.stackBottom = (void*)start;
-        arena.stackTop    = (void*)(start + aligned_bytes);
+        // Assign the boundaries of the sub-arena relative to the array base and current offset
+        arena.stackBottom = (void*)(pool_base + memoryIndex);
+        arena.stackTop    = (void*)(pool_base + memoryIndex + aligned_bytes);
 
-        memoryIndex += aligned_bytes; // Increment global tracker
+        // Advance the index offset to reserve the array block
+        memoryIndex += aligned_bytes;
     }
 
     return arena;
