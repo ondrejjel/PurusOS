@@ -59,18 +59,65 @@ SECTIONS
         __bss_end__ = _ebss;
     } > RAM
 
-    /* Heap & Stack boundaries (Dynamic Memory Allocation) */
+    /* Global variable allocation cap assertion (.data + .bss <= 40KB) */
+    ASSERT((_ebss - _sdata) <= 40K, "Error: Combined .data and .bss size exceeds the 40KB limit!")
+
+    /* Custom RAM allocations with 32-bit alignment for Cortex-M4 compatibility */
+
+    /* 1KB guard block to separate .bss from .kernel */
+    .bss_guard (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _sbss_guard = .;
+        . = . + 1K;
+        . = ALIGN(4);
+        _ebss_guard = .;
+    } > RAM
+
+    /* Kernel Stack RAM Allocation (4KB) */
+    .kernel (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _skernel = .;
+        . = . + 4K;
+        . = ALIGN(4);
+        _ekernel = .;
+    } > RAM
+
+    /* 1KB kernel guard to separate kernel from mempool */
+    .kernel_guard (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _skernel_guard = .;
+        . = . + 1K;
+        . = ALIGN(4);
+        _ekernel_guard = .;
+    } > RAM
+
+    /* Task Stacks Memory Pool Allocation (64KB) */
+    .mempool (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _smempool = .;
+        . = . + 64K;
+        . = ALIGN(4);
+        _emempool = .;
+    } > RAM
+
+    /* 1KB mempool guard to catch big mempool/task overflows */
+    .mempool_guard (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _smempool_guard = .;
+        . = . + 1K;
+        . = ALIGN(4);
+        _emempool_guard = .;
+    } > RAM
+
+    /* End of static allocations marker */
     . = ALIGN(8);          /* 8-byte alignment required by ARM ABI */
     _end = .;
     PROVIDE(end = .);
-
-    /* Minimum system stack requirement guard (1KB) */
-    _min_stack_size = 0x400;
-    .stack_space :
-    {
-        . = . + _min_stack_size;
-        . = ALIGN(8);
-    } > RAM
 
     /* Discard unwanted compilation sections */
     /DISCARD/ :
@@ -82,5 +129,9 @@ SECTIONS
     }
 }
 
-/* Safety RAM overflow check */
+/* * Safety RAM overflow check:
+ * Ensures all allocated sections fit within the 128KB total RAM space.
+ * The space between _end and _estack is left completely open for general
+ * RAM access / system stack operations.
+ */
 ASSERT(_estack >= _end, "Error: Memory region RAM overflowed with code/data symbols!")
