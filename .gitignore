@@ -3,6 +3,13 @@
 build/*
 !build/.gitkeep
 
+# compilation configs
+.clangd
+
+# lsp configs
+
+compile_commands.json
+
 # Object files
 
 *.o
