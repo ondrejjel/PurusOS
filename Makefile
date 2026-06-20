@@ -61,7 +61,7 @@ OBJECTS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
 OBJECTS += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SOURCES))
 
 # --- Build Rules ---
-.PHONY: all clean openocd flash gdb rebuild
+.PHONY: all clean openocd flash gdb rebuild compile_commands
 
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).hex
 
@@ -95,6 +95,10 @@ clean:
 
 # Rebuild option
 rebuild: clean all
+
+# Generation of compile compile commands
+compile_commands: clean
+	bear -- make
 
 # --- Hardware Deployment & Debugging Targets ---
 
