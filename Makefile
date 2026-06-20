@@ -91,7 +91,8 @@ $(BUILD_DIR)/%.o: %.S
 
 # Clean up build artifacts
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)/*
+	touch $(BUILD_DIR)/.gitkeep
 
 # Rebuild option
 rebuild: clean all

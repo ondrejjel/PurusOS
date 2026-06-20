@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "../include/allocator.h"   //  temporary hardcoded path
+#include "allocator.h"
 
 
 
