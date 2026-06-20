@@ -2,66 +2,84 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* A bounded arena allocator that sub-allocates fixed-size
- * arenas out of the main task memory pool (.mempool)
+/*
+ * Simple bounded arena allocator.
+ *
+ * This allocator sub-allocates linear memory blocks from a fixed
+ * memory region defined by linker script symbols.
+ *
+ * It does NOT support free operations.
  */
 
-// Global tracking offset within the main memory pool array
-static size_t memoryIndex = 0;
+/* Current offset within the memory pool */
+static size_t mempoolOffset = 0;
 
-// Linker script markers defining the absolute boundaries of the memory pool
+/*
+ * Linker-defined memory pool boundaries.
+ * These are provided by the linker script.
+ */
 extern uint32_t _smempool;
 extern uint32_t _emempool;
 
-typedef struct Arena_t {
-    void* stackBottom; // Lowest address of this sub-allocated arena
-    void* stackTop;    // Highest address (limit) of this sub-allocated arena
+/*
+ * Represents a linear sub-allocated memory region.
+ */
+typedef struct Arena_t
+{
+    void *stackBottom;  /* Start of allocated region */
+    void *stackTop;     /* End of allocated region */
 } Arena_t;
 
-// Returns a pointer to the start of the memory pool array
-static inline uint8_t* get_ram_start_ptr(void) {
-    return (uint8_t*)&_smempool;
+/* Returns start of memory pool */
+static inline uint8_t *get_mempool_start(void)
+{
+    return (uint8_t *)&_smempool;
 }
 
-// Returns a pointer to the end of the memory pool array
-static inline uint8_t* get_ram_end_ptr(void) {
-    return (uint8_t*)&_emempool;
+/* Returns end of memory pool */
+static inline uint8_t *get_mempool_end(void)
+{
+    return (uint8_t *)&_emempool;
 }
 
-// Calculates the total pool capacity directly from the linker symbols
-size_t x_pu_get_mempool_size(void) {
-    return (size_t)(get_ram_end_ptr() - get_ram_start_ptr());
+/* Returns total size of the memory pool in bytes */
+size_t x_pu_get_mempool_size(void)
+{
+    return (size_t)(get_mempool_end() - get_mempool_start());
 }
 
-// Checks if the aligned requested bytes fit within the remaining pool capacity
-static bool check_fit_ram(size_t alignedBytes) {
-    size_t totalPoolSize = x_pu_get_mempool_size();
+/* Checks whether a request fits into remaining pool space */
+static bool mempool_has_space(size_t alignedBytes)
+{
+    size_t poolSize = x_pu_get_mempool_size();
 
-    // Check if the current index plus requested size exceeds the overall array bounds
-    if (memoryIndex + alignedBytes > totalPoolSize) {
-        return false; // Array overflow prevented
+    return (mempoolOffset + alignedBytes) <= poolSize;
+}
+
+/*
+ * Allocates a linear arena from the memory pool.
+ *
+ * Allocation is 8-byte aligned to satisfy ARM ABI requirements.
+ * Returns a zeroed Arena_t if allocation fails.
+ */
+Arena_t x_pu_alloc_arena(size_t requested_bytes)
+{
+    Arena_t arena = {0};
+
+    /* Align size to 8-byte boundary */
+    size_t alignedBytes = (requested_bytes + 7U) & ~(size_t)7;
+
+    if (!mempool_has_space(alignedBytes))
+    {
+        return arena;
     }
-    return true;
-}
 
-// Allocate a sub-arena from the main pool block
-Arena_t x_pu_alloc_arena(size_t requested_bytes) {
-    Arena_t arena = {NULL, NULL};
+    uint8_t *poolBase = get_mempool_start();
 
-    // Enforce 8-byte alignment required by ARM ABI
-    size_t alignedBytes = (requested_bytes + 7) & ~(size_t)7;
+    arena.stackBottom = (void *)(poolBase + mempoolOffset);
+    arena.stackTop    = (void *)(poolBase + mempoolOffset + alignedBytes);
 
-    if (check_fit_ram(alignedBytes)) {
-        // Base address of the underlying storage array
-        uint8_t* poolBase = get_ram_start_ptr();
-
-        // Assign the boundaries of the sub-arena relative to the array base and current offset
-        arena.stackBottom = (void*)(poolBase + memoryIndex);
-        arena.stackTop    = (void*)(poolBase + memoryIndex + alignedBytes);
-
-        // Advance the index offset to reserve the array block
-        memoryIndex += alignedBytes;
-    }
+    mempoolOffset += alignedBytes;
 
     return arena;
 }

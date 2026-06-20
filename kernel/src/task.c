@@ -3,57 +3,85 @@
 #include <stdbool.h>
 #include "allocator.h"
 
+/*
+ * Task states used by the scheduler.
+ */
+typedef enum TaskState_t
+{
+    INVALID,    /* Task is not valid (creation failure or fault) */
+    RUNNING,    /* Currently executing task */
+    READY,      /* Ready to be scheduled */
+    BLOCKED     /* Waiting for event or resource */
+} TaskState_t;
 
+/*
+ * Task Control Block (TCB)
+ *
+ * Represents all runtime information required by the scheduler
+ * to manage a task.
+ */
+typedef struct TCB_t
+{
+    void *stackPtr;              /* Current stack pointer (PSP) */
 
-typedef enum TaskState_t{       // tasks will have one of those states
-    INVALID,                    // task is invalid when any fault happens or if there is a initialisation issue
-    RUNNING,                    // task is running when scheduler swiches to it
-    READY,                      // task is ready after yielding back to scheduler
-    BLOCKED                     // task is blocked when waiting for external condition or when fault is detected
-}TaskState_t;
+    void (*task)(void *arg);     /* Task entry function */
+    void *arg;                   /* Task argument */
 
-typedef struct TCB_t {
-    void* stackPtr;             // CURRENT stack pointer
+    void *stackBottom;           /* Lower stack boundary */
+    void *stackTop;              /* Upper stack boundary */
 
-    void (*task)(void *arg);    // Pointer to the task function
-    void* arg;                  // Arguments passed to the task function
+    uint32_t errorCode;          /* Task fault / error status */
+    uint16_t id;                 /* Unique task ID */
+    TaskState_t state;           /* Current task state */
 
-    void* stackBottom;          // bottom stack boundary
-    void* stackTop;             // top stack boundary
-
-    uint32_t errorCode;         // task error field
-    uint16_t id;                // Task ID
-    TaskState_t state;          // tasks current state
 } TCB_t;
 
-
+/* Global task ID counter */
 static uint16_t taskId = 0;
 
-__attribute__((nonnull(1)))
-TCB_t x_pu_create_task(void (*task)(void* arg),void* arguments, size_t stackSize){
-    TCB_t tcb = {0}; // reset everything
+/*
+ * Creates a new task and allocates its stack from the arena allocator.
+ *
+ * Stack memory is assumed to grow downward (Cortex-M convention).
+ */
+TCB_t x_pu_create_task(void (*task)(void *arg), void *arguments, size_t stackSize)
+{
+    TCB_t tcb = {0};
 
-    Arena_t taskAdresses = x_pu_alloc_arena(stackSize); // get adresses
-    tcb.stackBottom = taskAdresses.stackBottom;         // assign bottom adress
-    tcb.stackTop = taskAdresses.stackTop;               // assign top adress
-    tcb.stackPtr = taskAdresses.stackTop;               // stack pointer has to be on upper bound because stack grows downward
-
-    if (tcb.stackBottom == NULL || tcb.stackTop == NULL || stackSize == 0) { // null ptr safety check
-        //todo: change hardcoded value to enum field
-        tcb.errorCode = 0xFFFFAAAA; // set error code to signalise a fault
-        return tcb;                 // return invalid task block
+    /* Validate input early */
+    if (task == NULL || stackSize == 0)
+    {
+        tcb.errorCode = 0xFFFFAAAA;
+        tcb.state = INVALID;
+        return tcb;
     }
 
-    tcb.id = taskId;    //  set the id
-    taskId++;           //  increment global id counter
+    /* Allocate stack memory for the task */
+    Arena_t taskArena = x_pu_alloc_arena(stackSize);
 
-    tcb.state = READY;  // default state
+    /* Validate allocation result */
+    if (taskArena.stackBottom == NULL || taskArena.stackTop == NULL)
+    {
+        tcb.errorCode = 0xFFFFAAAA;
+        tcb.state = INVALID;
+        return tcb;
+    }
 
+    /* Initialize task stack */
+    tcb.stackBottom = taskArena.stackBottom;
+    tcb.stackTop    = taskArena.stackTop;
+    tcb.stackPtr    = taskArena.stackTop; /* stack grows downward */
 
-    tcb.task = task;        // pass function pointer
-    tcb.arg = arguments;    // pass arguments
+    /* Assign identity */
+    tcb.id = taskId++;
+    tcb.state = READY;
+
+    /* Assign execution context */
+    tcb.task = task;
+    tcb.arg  = arguments;
+
+    /* Clear error state on success */
+    tcb.errorCode = 0;
 
     return tcb;
-
 }
-
