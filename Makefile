@@ -1,4 +1,7 @@
-# --- Toolchain Setup ---
+################################################################################
+# Toolchain
+################################################################################
+
 CC      := arm-none-eabi-gcc
 AS      := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
@@ -6,114 +9,185 @@ OBJDUMP := arm-none-eabi-objdump
 SIZE    := arm-none-eabi-size
 GDB     := gdb-multiarch
 
-# --- Project Target Name ---
-TARGET  := rtos_app
+################################################################################
+# Project
+################################################################################
 
-# --- Directory Definitions ---
-BUILD_DIR := build
-APP_DIR   := app
-KERN_DIR  := kernel
-PORT_DIR  := portable/arch/arm/cortex-m4/port
-BSP_DIR   := portable/bsp/stm32f411xx
-LIBS_DIR  := libs
+TARGET := rtos_app
 
-# --- Linker script ---
-LINKER_SCRIPT := stm32f411xe
-#LINKER_SCRIPT := stm32f411xc # uncomment if working with 256kb version
+################################################################################
+# Build Directories
+################################################################################
 
-# --- OpenOCD Setup ---
-OPENOCD           := openocd
-OPENOCD_CFG       := $(BSP_DIR)/openocd.cfg
-OPENOCD_INTERFACE := interface/stlink.cfg
-OPENOCD_TARGET    := target/stm32f4x.cfg
+BUILD_DIR  := build
+APP_DIR    := app
+KERNEL_DIR := kernel
+LIBS_DIR   := libs
 
-# --- Architecture & Compilation Flags ---
-MCU       := -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-C_FLAGS   := $(MCU) -O0 -g3 -Wall -fdata-sections -ffunction-sections
-AS_FLAGS  := $(MCU) -g3 -Wall
-# Linking
-LD_FLAGS  := $(MCU) -specs=nano.specs -T$(BSP_DIR)/$(LINKER_SCRIPT).ld -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--gc-sections
+################################################################################
+# Board Selection
+################################################################################
 
-# --- Include Paths ---
+BOARD := stm32-blackpill
+
+################################################################################
+# Board Definitions
+################################################################################
+
+ifeq ($(BOARD),stm32-blackpill)
+
+CPU             := cortex-m4
+FLOAT_ABI       := hard
+FPU             := fpv4-sp-d16
+
+CORE_DIR        := arch/arm/cortex-m4/core
+SOC_DIR         := soc/stm32/f411
+BSP_DIR         := bsp/stm32-blackpill
+
+LINKER_SCRIPT   := xe
+
+OPENOCD_CFG     := $(BSP_DIR)/openocd.cfg
+
+endif
+
+################################################################################
+# OpenOCD
+################################################################################
+
+OPENOCD := openocd
+
+################################################################################
+# Compiler & Linker Flags
+################################################################################
+
+CPU_FLAGS := \
+	-mcpu=$(CPU) \
+	-mthumb \
+	-mfloat-abi=$(FLOAT_ABI) \
+	-mfpu=$(FPU)
+
+C_FLAGS := \
+	$(CPU_FLAGS) \
+	-O0 \
+	-g3 \
+	-Wall \
+	-fdata-sections \
+	-ffunction-sections
+
+AS_FLAGS := \
+	$(CPU_FLAGS) \
+	-g3 \
+	-Wall
+
+LD_FLAGS := \
+	$(CPU_FLAGS) \
+	-specs=nano.specs \
+	-T$(SOC_DIR)/linker/$(LINKER_SCRIPT).ld \
+	-Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--gc-sections
+
+################################################################################
+# Include Paths
+################################################################################
+
 INC_DIRS := \
-    -I$(APP_DIR) \
-    -I$(KERN_DIR)/include \
-    -I$(PORT_DIR) \
-    -I$(BSP_DIR)/drivers/include \
-    -I$(LIBS_DIR)/include
+	-I$(APP_DIR) \
+	-I$(KERNEL_DIR)/include \
+	-I$(CORE_DIR) \
+	-I$(SOC_DIR)/drivers/include \
+	-I$(BSP_DIR) \
+	-I$(LIBS_DIR)/include
 
-# --- Source Files ---
+################################################################################
+# Source Files
+################################################################################
 
-# Automatically grab all .c files in the specified directories
 C_SOURCES := \
-    $(wildcard $(APP_DIR)/*.c) \
-    $(wildcard $(KERN_DIR)/src/*.c) \
-    $(wildcard $(PORT_DIR)/*.c) \
-    $(wildcard $(BSP_DIR)/drivers/src/*.c)
+	$(wildcard $(APP_DIR)/*.c) \
+	$(wildcard $(KERNEL_DIR)/src/*.c) \
+	$(wildcard $(CORE_DIR)/*.c) \
+	$(wildcard $(SOC_DIR)/drivers/src/*.c) \
+	$(wildcard $(BSP_DIR)/*.c) \
+	$(wildcard $(LIBS_DIR)/src/*.c)
 
-# Automatically grab all .S files in the specified directories
 ASM_SOURCES := \
-    $(wildcard $(PORT_DIR)/*.S) \
-    $(wildcard $(BSP_DIR)/*.S)
+	$(wildcard $(CORE_DIR)/*.S) \
+	$(SOC_DIR)/startup.S
 
-# --- Object Files Tracking ---
-OBJECTS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
-OBJECTS += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SOURCES))
+################################################################################
+# Object Files
+################################################################################
 
-# --- Build Rules ---
-.PHONY: all clean openocd flash gdb rebuild compile_commands
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+OBJECTS += $(patsubst %.S,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
 
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).hex
+################################################################################
+# Build Targets
+################################################################################
 
-# Link everything into the final ELF file
+.PHONY: all clean rebuild compile_commands flash openocd gdb
+
+all: $(BUILD_DIR)/$(TARGET).elf \
+     $(BUILD_DIR)/$(TARGET).bin \
+     $(BUILD_DIR)/$(TARGET).hex
+
+################################################################################
+# Linking
+################################################################################
+
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS)
 	@mkdir -p $(dir $@)
 	$(CC) $(OBJECTS) $(LD_FLAGS) -o $@
 	$(SIZE) $@
 
-# Generate binary image
+################################################################################
+# Binary Generation
+################################################################################
+
 $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
-# Generate hex image
 $(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
 
-# Compile C files
+################################################################################
+# Compilation
+################################################################################
+
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(INC_DIRS) -c $< -o $@
 
-# Compile Assembly files
 $(BUILD_DIR)/%.o: %.S
 	@mkdir -p $(dir $@)
 	$(AS) $(AS_FLAGS) $(INC_DIRS) -c $< -o $@
 
-# Clean up build artifacts
+################################################################################
+# Utility Targets
+################################################################################
+
 clean:
 	rm -rf $(BUILD_DIR)/*
 	touch $(BUILD_DIR)/.gitkeep
 
-# Rebuild option
 rebuild: clean all
 
-# Generation of compile compile commands
 compile_commands: clean
 	bear -- make
 
-# --- Hardware Deployment & Debugging Targets ---
+################################################################################
+# Hardware Targets
+################################################################################
 
-# Start OpenOCD Server
 openocd:
 	$(OPENOCD) -f $(OPENOCD_CFG)
 
-# Flash the binary directly via OpenOCD and exit
 flash: $(BUILD_DIR)/$(TARGET).elf
-	$(OPENOCD) -f $(OPENOCD_CFG) -c "program $< verify reset exit"
+	$(OPENOCD) -f $(OPENOCD_CFG) \
+	-c "program $< verify reset exit"
 
-# Launch gdb-multiarch, connect to local OpenOCD, program, and reset
 gdb: $(BUILD_DIR)/$(TARGET).elf
-	$(GDB) $< -ex "target extended-remote :3333" \
-	          -ex "monitor reset halt" \
-	          -ex "load" \
-	          -ex "monitor reset halt"
+	$(GDB) $< \
+	-ex "target extended-remote :3333" \
+	-ex "monitor reset halt" \
+	-ex "load" \
+	-ex "monitor reset halt"
