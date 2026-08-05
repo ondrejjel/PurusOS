@@ -3,7 +3,7 @@
 
 #include<stddef.h>
 
-typedef struct MemoryBlock_t
+typedef struct
 {
     void *begin;
     void *end;

@@ -1,12 +1,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "allocator.h"
+#include <allocator.h>
 
 /*
  * Task states used by the scheduler.
  */
-typedef enum TaskState_t
+typedef enum
 {
     INVALID,    /* Task is not valid (creation failure or fault) */
     RUNNING,    /* Currently executing task */
@@ -20,7 +20,7 @@ typedef enum TaskState_t
  * Represents all runtime information required by the scheduler
  * to manage a task.
  */
-typedef struct TCB_t
+typedef struct
 {
     void *stackPtr;              /* Current stack pointer (PSP) */
 

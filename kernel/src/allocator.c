@@ -22,7 +22,7 @@ extern uint32_t _smempool;
 extern uint32_t _emempool;
 
 /* Represents a linear sub-allocated memory region */
-typedef struct MemoryBlock_t
+typedef struct
 {
     void *begin;
     void *end;
