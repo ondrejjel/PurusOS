@@ -3,11 +3,12 @@
 
 #include<stddef.h>
 
-typedef struct Arena_t {
-    void* stackBottom; //stack bounds
-    void* stackTop;
-} Arena_t;
+typedef struct MemoryBlock_t
+{
+    void *begin;
+    void *end;
+} MemoryBlock_t;
 
-Arena_t x_pu_alloc_arena(size_t requested_bytes);
+MemoryBlock_t x_pu_allocate_memory_block(size_t requested_bytes);
 
 #endif // ALLOCATOR_H_
