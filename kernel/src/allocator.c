@@ -51,11 +51,11 @@ size_t s_pu_get_mempool_size(void)
 }
 
 /* Checks whether a request fits into remaining pool space */
-static bool mempool_has_space(size_t alignedBytes)
+static bool mempool_has_space(size_t Bytes)
 {
     const size_t mempoolSize = s_pu_get_mempool_size();
 
-    return (mempoolOffset + alignedBytes) <= mempoolSize;
+    return (mempoolOffset + Bytes) <= mempoolSize;
 }
 
 /*
@@ -79,14 +79,11 @@ size_t s_pu_get_memory_block_size(const MemoryBlock_t *block)
  * allocation is 8-byte aligned to make everything nicely rounded
  */
 
-MemoryBlock_t x_pu_allocate_memory_block(size_t requested_bytes)
+MemoryBlock_t x_pu_allocate_memory_block(size_t requestedBytes)
 {
     MemoryBlock_t block = {0};
 
-    /* Align size to 8-byte boundary */
-    size_t alignedBytes = (requested_bytes + 7U) & ~(size_t)7;
-
-    if (!mempool_has_space(alignedBytes))
+    if (!mempool_has_space(requestedBytes))
     {
         return block;
     }
@@ -94,9 +91,9 @@ MemoryBlock_t x_pu_allocate_memory_block(size_t requested_bytes)
     uint8_t *mempoolBase = get_mempool_start();
 
     block.begin = (void *)(mempoolBase + mempoolOffset);
-    block.end    = (void *)(mempoolBase + mempoolOffset + alignedBytes);
+    block.end    = (void *)(mempoolBase + mempoolOffset + requestedBytes);
 
-    mempoolOffset += alignedBytes;
+    mempoolOffset += requestedBytes;
 
     return block;
 }
