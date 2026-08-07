@@ -7,31 +7,7 @@
 #include <fault_code.h>
 #include <allocator.h>
 #include <kernel_interface.h>
-
-typedef struct
-{
-    void (*function)(void *);
-    void *argument;
-} Task_t;
-
-typedef enum
-{
-    INVALID, /* Task is not valid (creation failure or fault) */
-    RUNNING, /* Currently executing task */
-    READY,   /* Ready to be scheduled */
-    BLOCKED  /* Waiting for event or resource */
-} TaskState_t;
-
-typedef struct
-{
-    MemoryBlock_t memory;
-    Task_t task;
-    uintptr_t context;
-
-    TaskState_t state;
-    uint16_t id;
-    TaskFault_t faultCode;
-} TCB_t;
+#include <task.h>
 
 static uint16_t taskId = 0;
 
