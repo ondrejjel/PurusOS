@@ -11,4 +11,4 @@ typedef enum
     PU_TASK_CONTEXT_CREATION_FAILED,
 } TaskFault_t;
 
-#endif /* PU_FAULT_CODE_H */
+#endif // PU_FAULT_CODE_H
