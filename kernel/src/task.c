@@ -1,87 +1,91 @@
+/* Standard headers */
 #include <stdint.h>
 #include <stddef.h>
-#include <stdbool.h>
+
+/* Project headers */
+#include <rtos_config.h>
+#include <fault_code.h>
 #include <allocator.h>
+#include <kernel_interface.h>
 
-/*
- * Task states used by the scheduler.
- */
-typedef enum
-{
-    INVALID,    /* Task is not valid (creation failure or fault) */
-    RUNNING,    /* Currently executing task */
-    READY,      /* Ready to be scheduled */
-    BLOCKED     /* Waiting for event or resource */
-} TaskState_t;
-
-/*
- * Task Control Block (TCB)
- *
- * Represents all runtime information required by the scheduler
- * to manage a task.
- */
 typedef struct
 {
-    void *stackPtr;              /* Current stack pointer (PSP) */
+    void (*function)(void *);
+    void *argument;
+} Task_t;
 
-    void (*task)(void *arg);     /* Task entry function */
-    void *arg;                   /* Task argument */
+typedef enum
+{
+    INVALID, /* Task is not valid (creation failure or fault) */
+    RUNNING, /* Currently executing task */
+    READY,   /* Ready to be scheduled */
+    BLOCKED  /* Waiting for event or resource */
+} TaskState_t;
 
-    void *stackBottom;           /* Lower stack boundary */
-    void *stackTop;              /* Upper stack boundary */
+typedef struct
+{
+    MemoryBlock_t memory;
+    Task_t task;
+    uintptr_t context;
 
-    uint32_t errorCode;          /* Task fault / error status */
-    uint16_t id;                 /* Unique task ID */
-    TaskState_t state;           /* Current task state */
-
+    TaskState_t state;
+    uint16_t id;
+    TaskFault_t faultCode;
 } TCB_t;
 
-/* Global task ID counter */
 static uint16_t taskId = 0;
 
-/*
- * Creates a new task and allocates its stack from the arena allocator.
- *
- * Stack memory is assumed to grow downward (Cortex-M convention).
- */
-TCB_t x_pu_create_task(void (*task)(void *arg), void *arguments, size_t stackSize)
+TCB_t x_pu_create_task(void (*function)(void *arg), void *arguments, size_t stackSize)
 {
     TCB_t tcb = {0};
 
-    /* Validate input early */
-    if (task == NULL || stackSize == 0)
+    if (function == NULL)
     {
-        tcb.errorCode = 0xFFFFAAAA;
-        tcb.state = INVALID;
+        tcb.faultCode = PU_TASK_NULL_FUNCTION;
         return tcb;
     }
 
-    /* Allocate stack memory for the task */
-    Arena_t taskArena = x_pu_alloc_arena(stackSize);
+    Task_t task = {function, arguments};
 
-    /* Validate allocation result */
-    if (taskArena.stackBottom == NULL || taskArena.stackTop == NULL)
+    /* Align size to boundary from config */
+    size_t alignedStackSize =
+        (stackSize + PU_STACK_ALIGNMENT - 1) & ~((size_t)PU_STACK_ALIGNMENT - 1);
+
+    if (alignedStackSize > PU_MAXIMAL_STACK_SIZE)
     {
-        tcb.errorCode = 0xFFFFAAAA;
-        tcb.state = INVALID;
+        tcb.faultCode = PU_TASK_STACK_TOO_BIG;
+        return tcb;
+    }
+    if (alignedStackSize < PU_MINIMAL_STACK_SIZE)
+    {
+        tcb.faultCode = PU_TASK_STACK_TOO_SMALL;
         return tcb;
     }
 
-    /* Initialize task stack */
-    tcb.stackBottom = taskArena.stackBottom;
-    tcb.stackTop    = taskArena.stackTop;
-    tcb.stackPtr    = taskArena.stackTop; /* stack grows downward */
+    MemoryBlock_t memory = x_pu_allocate_memory_block(alignedStackSize);
 
-    /* Assign identity */
-    tcb.id = taskId++;
-    tcb.state = READY;
+    if (memory.begin == NULL || memory.end == NULL)
+    {
+        tcb.faultCode = PU_TASK_MEMORY_ALLOCATION_FAILED;
+        return tcb;
+    }
 
-    /* Assign execution context */
+    uintptr_t context = uptr_pu_task_context_create(memory, &task);
+
+    if (context == 0)
+    {
+        tcb.faultCode = PU_TASK_CONTEXT_CREATION_FAILED;
+        return tcb;
+    }
+
+    tcb.memory = memory;
     tcb.task = task;
-    tcb.arg  = arguments;
+    tcb.context = context;
+    tcb.state = READY;
+    tcb.id = taskId;
+    tcb.faultCode = PU_TASK_OK;
 
-    /* Clear error state on success */
-    tcb.errorCode = 0;
+    taskId++;
 
     return tcb;
 }
