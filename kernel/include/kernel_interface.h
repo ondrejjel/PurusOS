@@ -1,4 +1,4 @@
-#ifndef  PU_KERNEL_INTERFACE
+#ifndef PU_KERNEL_INTERFACE
 #define PU_KERNEL_INTERFACE
 
 #include <stdint.h>
@@ -19,7 +19,6 @@ uintptr_t uptr_pu_task_context_save(void);
 void v_pu_task_context_restore(uintptr_t context);
 
 uintptr_t uptr_pu_task_context_create(MemoryBlock_t memory, const Task_t *task);
-
 
 void v_pu_kernel_use_interface(const KernelInterface_t *interface);
 

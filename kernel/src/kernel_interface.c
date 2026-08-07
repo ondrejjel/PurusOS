@@ -1,4 +1,4 @@
-//new interface file that will replace port_interface
+// new interface file that will replace port_interface
 #include <stddef.h>
 #include <stdint.h>
 #include <allocator.h>
@@ -8,14 +8,15 @@ typedef struct
 {
     uintptr_t (*context_save)(void);
     void (*context_restore)(uintptr_t context);
-    uintptr_t (*context_create)(MemoryBlock_t *memory, const Task_t *task); //todo: finish task.h implementation
-} KernelInterface_t ;
+    uintptr_t (*context_create)(MemoryBlock_t *memory,
+                                const Task_t *task); // todo: finish task.h implementation
+} KernelInterface_t;
 
 KernelInterface_t activeInterface = {0};
 
 uintptr_t uptr_pu_task_context_save(void)
 {
-    if(activeInterface.context_save == NULL)
+    if (activeInterface.context_save == NULL)
     {
         return (uintptr_t)0;
     }
@@ -25,7 +26,7 @@ uintptr_t uptr_pu_task_context_save(void)
 
 void v_pu_task_context_restore(uintptr_t context)
 {
-    if(activeInterface.context_restore == NULL)
+    if (activeInterface.context_restore == NULL)
     {
         return;
     }
@@ -34,7 +35,7 @@ void v_pu_task_context_restore(uintptr_t context)
 
 uintptr_t uptr_pu_task_context_create(MemoryBlock_t memory, const Task_t *task)
 {
-    if(activeInterface.context_create == NULL)
+    if (activeInterface.context_create == NULL)
     {
         return (uintptr_t)0;
     }
@@ -42,10 +43,9 @@ uintptr_t uptr_pu_task_context_create(MemoryBlock_t memory, const Task_t *task)
     return activeInterface.context_create(memory, task);
 }
 
-
 void v_pu_kernel_use_interface(const KernelInterface_t *interface)
 {
-    if(interface == NULL)
+    if (interface == NULL)
     {
         return;
     }

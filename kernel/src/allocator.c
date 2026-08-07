@@ -73,7 +73,6 @@ size_t s_pu_get_memory_block_size(const MemoryBlock_t *block)
     return (size_t)((uint8_t *)block->end - (uint8_t *)block->begin);
 }
 
-
 /*
  * Function to reserve a memory block of given size in bytes
  * allocation is 8-byte aligned to make everything nicely rounded
@@ -91,7 +90,7 @@ MemoryBlock_t x_pu_allocate_memory_block(size_t requestedBytes)
     uint8_t *mempoolBase = get_mempool_start();
 
     block.begin = (void *)(mempoolBase + mempoolOffset);
-    block.end    = (void *)(mempoolBase + mempoolOffset + requestedBytes);
+    block.end = (void *)(mempoolBase + mempoolOffset + requestedBytes);
 
     mempoolOffset += requestedBytes;
 
