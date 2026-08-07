@@ -1,18 +1,8 @@
-// new interface file that will replace port_interface
 #include <stddef.h>
 #include <stdint.h>
 #include <allocator.h>
 #include <task.h>
-
-typedef struct
-{
-    uintptr_t (*context_save)(void);
-    void (*context_restore)(uintptr_t context);
-    uintptr_t (*context_create)(MemoryBlock_t *memory,
-                                const Task_t *task); // todo: finish task.h implementation
-} KernelInterface_t;
-
-KernelInterface_t activeInterface = {0};
+#include <kernel_interface.h>
 
 uintptr_t uptr_pu_task_context_save(void)
 {
