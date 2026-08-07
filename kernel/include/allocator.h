@@ -1,5 +1,5 @@
-#ifndef PU_ALLOCATOR_H_
-#define PU_ALLOCATOR_H_
+#ifndef PU_ALLOCATOR_H
+#define PU_ALLOCATOR_H
 
 #include <stddef.h>
 
@@ -11,4 +11,4 @@ typedef struct
 
 MemoryBlock_t x_pu_allocate_memory_block(size_t requested_bytes);
 
-#endif // PU_ALLOCATOR_H_
+#endif // PU_ALLOCATOR_H

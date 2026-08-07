@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <allocator.h>
 
 /*
  * Simple bounded memory block allocator.
@@ -20,13 +21,6 @@ static size_t mempoolOffset = 0;
  */
 extern uint32_t _smempool;
 extern uint32_t _emempool;
-
-/* Represents a linear sub-allocated memory region */
-typedef struct
-{
-    void *begin;
-    void *end;
-} MemoryBlock_t;
 
 /*
  * Memory pool helpers and utilities
