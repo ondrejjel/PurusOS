@@ -31,7 +31,7 @@ typedef struct
 
     TaskState_t state;
     uint16_t id;
-    TaskFault_t faultCode;
+    uint32_t faultCode;
 } TCB_t;
 
 TCB_t x_pu_create_task(void (*function)(void *arg), void *arguments, size_t stackSize);
