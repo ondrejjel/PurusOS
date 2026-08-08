@@ -13,7 +13,8 @@ static uint16_t taskId = 0;
 
 TCB_t x_pu_create_task(void (*function)(void *arg), void *arguments, size_t stackSize)
 {
-    TCB_t tcb = {0};
+    TCB_t tcb = {
+        .memory = {0}, .task = {0}, .context = 0, .state = INVALID, .id = 0, .faultCode = 0};
 
     if (function == NULL)
     {
