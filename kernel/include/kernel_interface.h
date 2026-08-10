@@ -12,7 +12,7 @@ typedef struct
     uintptr_t (*context_create)(MemoryBlock_t memory, const Task_t *task);
 } KernelInterface_t;
 
-KernelInterface_t activeInterface = {0};
+extern KernelInterface_t activeInterface;
 
 uintptr_t uptr_pu_task_context_save(void);
 

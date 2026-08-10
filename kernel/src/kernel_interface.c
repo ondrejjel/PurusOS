@@ -4,6 +4,8 @@
 #include <task.h>
 #include <kernel_interface.h>
 
+KernelInterface_t activeInterface = {0};
+
 uintptr_t uptr_pu_task_context_save(void)
 {
     if (activeInterface.context_save == NULL)
