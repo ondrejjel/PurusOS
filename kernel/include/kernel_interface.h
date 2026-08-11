@@ -1,6 +1,7 @@
 #ifndef PU_KERNEL_INTERFACE_H
 #define PU_KERNEL_INTERFACE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <allocator.h>
 #include <task.h>
@@ -22,9 +23,12 @@ typedef struct
     uintptr_t (*context_save)(void);
     void (*context_restore)(uintptr_t context);
     uintptr_t (*context_create)(MemoryBlock_t memory, const Task_t *task);
+    void (*fault_trap)(uint32_t faultCode, bool isAtRuntime);
 } KernelInterface_t;
 
-uintptr_t uptr_pu_task_context_save(void);
+void v_pu_fault_trap(uint32_t faultCode, bool isAtRuntime);
+
+uintptr_t uptr_pu_task_context_save();
 
 void v_pu_task_context_restore(uintptr_t context);
 
