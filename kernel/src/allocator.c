@@ -58,7 +58,7 @@ static bool mempool_has_space(size_t Bytes)
  * Memory block helpers and utilities
  */
 
-/* Return a size of the allocated memory block in bytes */
+/* Return a size of memory block in bytes */
 size_t s_pu_get_memory_block_size(const MemoryBlock_t *block)
 {
     if (block == NULL)

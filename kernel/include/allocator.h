@@ -15,6 +15,9 @@ typedef struct
     void *end;   /* First address after the block, exclusive */
 } MemoryBlock_t;
 
+/* Returns the size of a memory block in bytes. */
+size_t s_pu_get_memory_block_size(const MemoryBlock_t *block);
+
 /*
  * Allocates the requested number of bytes and returns the
  * boundaries of the allocated memory block.
