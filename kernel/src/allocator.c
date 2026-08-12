@@ -41,24 +41,29 @@ static inline uint8_t *get_mempool_end(void)
 }
 
 /* Returns total size of the memory pool in bytes */
-size_t s_pu_get_mempool_size(void)
+static size_t get_mempool_size(void)
 {
     return (size_t)(get_mempool_end() - get_mempool_start());
 }
 
 /* Checks whether a request fits into remaining pool space */
-static bool mempool_has_space(size_t Bytes)
+static bool mempool_has_space(size_t bytes)
 {
-    const size_t mempoolSize = s_pu_get_mempool_size();
+    const size_t mempoolSize = get_mempool_size();
 
-    return (mempoolOffset + Bytes) <= mempoolSize;
+    if (bytes > mempoolSize)
+    {
+        return false;
+    }
+
+    return (mempoolSize - bytes) >= mempoolOffset;
 }
 
 /*
  * Memory block helpers and utilities
  */
 
-/* Return a size of memory block in bytes */
+/* Returns a size of memory block in bytes, or 0 for NULL */
 size_t s_pu_get_memory_block_size(const MemoryBlock_t *block)
 {
     if (block == NULL)
@@ -71,13 +76,12 @@ size_t s_pu_get_memory_block_size(const MemoryBlock_t *block)
 
 /*
  * Function to reserve a memory block of given size in bytes
- * allocation is 8-byte aligned to make everything nicely rounded
  */
 
 MemoryBlock_t x_pu_allocate_memory_block(size_t requestedBytes)
 {
     MemoryBlock_t block = {0};
-
+    /* When memory pool doesnt have enough space for allocation, fall into fault trap */
     if (!mempool_has_space(requestedBytes))
     {
         v_pu_fault_trap(PU_ALLOCATOR_NOT_ENOUGH_SPACE, false);
