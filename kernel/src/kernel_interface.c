@@ -8,9 +8,12 @@
 
 static KernelInterface_t activeInterface = {0};
 
-void v_pu_fault_trap(uint32_t faultCode, bool isAtRuntime)
+_Noreturn void v_pu_fault_trap(uint32_t faultCode, bool isAtRuntime)
 {
     activeInterface.fault_trap(faultCode, isAtRuntime);
+    for (;;)
+    {
+    }
 }
 
 uintptr_t uptr_pu_task_context_save(void)
