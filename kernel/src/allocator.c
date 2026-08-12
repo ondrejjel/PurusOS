@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <allocator.h>
+#include <kernel_interface.h>
+#include <fault_code.h>
 
 /*
  * Simple bounded memory block allocator.
@@ -78,7 +80,7 @@ MemoryBlock_t x_pu_allocate_memory_block(size_t requestedBytes)
 
     if (!mempool_has_space(requestedBytes))
     {
-        return block;
+        v_pu_fault_trap(PU_ALLOCATOR_NOT_ENOUGH_SPACE, false);
     }
 
     uint8_t *mempoolBase = get_mempool_start();
