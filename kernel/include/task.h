@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <fault_code.h>
 #include <allocator.h>
 
 /*
@@ -23,14 +22,13 @@ typedef struct
  */
 typedef enum
 {
-    INVALID, /* Task is not valid due to a fault */
     RUNNING, /* Currently executing task */
     READY    /* Ready to be scheduled */
 } TaskState_t;
 
 /*
  * Task Control Block containing task metadata, execution state,
- * saved context, and diagnostic information.
+ * and saved execution context.
  */
 typedef struct
 {
@@ -40,7 +38,6 @@ typedef struct
 
     TaskState_t state;
     uint16_t id;
-    uint32_t faultCode;
 } TCB_t;
 
 /*
