@@ -21,8 +21,8 @@ typedef struct
  */
 typedef enum
 {
-    RUNNING, /* Currently executing task */
-    READY    /* Ready to be scheduled */
+    READY,  /* Ready to be scheduled */
+    RUNNING /* Currently executing task */
 } TaskState_t;
 
 /*
