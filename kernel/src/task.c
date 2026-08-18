@@ -30,12 +30,12 @@ TCB_t x_pu_create_task(void (*function)(void *arg), void *arguments, size_t stac
     size_t alignedStackSize =
         (stackSize + PU_STACK_ALIGNMENT - 1) & ~((size_t)PU_STACK_ALIGNMENT - 1);
 
-    if (alignedStackSize > PU_MAXIMAL_STACK_SIZE)
+    if (alignedStackSize > PU_MAXIMUM_STACK_SIZE)
     {
         v_pu_fault_trap(PU_TASK_STACK_TOO_BIG, false);
     }
 
-    if (alignedStackSize < PU_MINIMAL_STACK_SIZE)
+    if (alignedStackSize < PU_MINIMUM_STACK_SIZE)
     {
         v_pu_fault_trap(PU_TASK_STACK_TOO_SMALL, false);
     }

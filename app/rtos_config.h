@@ -1,15 +1,10 @@
-#ifndef RTOS_CONFIG_H_
-#define RTOS_CONFIG_H_
+#ifndef RTOS_CONFIG_H
+#define RTOS_CONFIG_H
 
-#define PU_ALIGNMENT_2   2U
-#define PU_ALIGNMENT_4   4U
-#define PU_ALIGNMENT_8   8U
-#define PU_ALIGNMENT_16 16U
-#define PU_ALIGNMENT_32 32U
+/* Alignment must be non-zero power of two */
+#define PU_STACK_ALIGNMENT 8U
 
-#define PU_STACK_ALIGNMENT PU_ALIGNMENT_8
+#define PU_MINIMUM_STACK_SIZE 128U
+#define PU_MAXIMUM_STACK_SIZE 1024U
 
-#define PU_MINIMAL_STACK_SIZE 128U
-#define PU_MAXIMAL_STACK_SIZE 4096U
-
-#endif // RTOS_CONFIG_H_
+#endif /* RTOS_CONFIG_H */
