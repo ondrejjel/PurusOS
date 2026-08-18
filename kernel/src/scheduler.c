@@ -6,6 +6,7 @@
 #include <kernel_interface.h>
 #include <allocator.h>
 #include <task.h>
+#include <scheduler.h>
 
 static TCB_t readyTasks[PU_MAXIMUM_TASK_COUNT] = {};
 static size_t loadedTasks = 0;
