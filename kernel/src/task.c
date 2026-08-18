@@ -7,9 +7,6 @@
 #include <kernel_interface.h>
 #include <task.h>
 
-/* Private task ID counter. */
-static uint16_t taskId = 0;
-
 /*
  * Creates a task and initializes its stack and execution context.
  */
@@ -61,9 +58,6 @@ TCB_t x_pu_create_task(void (*function)(void *arg), void *arguments, size_t stac
     tcb.task = task;
     tcb.context = context;
     tcb.state = READY;
-    tcb.id = taskId;
-
-    taskId++;
 
     return tcb;
 }

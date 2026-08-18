@@ -8,6 +8,7 @@
 
 static TCB_t readyTasks[PU_MAXIMUM_TASK_COUNT] = {};
 static size_t loadedTasks = 0;
+static uint16_t taskId = 0;
 
 static bool check_tcb(const TCB_t *tcb)
 {
@@ -37,6 +38,8 @@ void v_pu_load_task(TCB_t task)
         if (check_tcb(&task))
         {
             readyTasks[loadedTasks] = task;
+            task.id = taskId;
+            taskId++;
             loadedTasks++;
         }
         else
