@@ -78,6 +78,11 @@ size_t s_pu_get_loaded_task_count(void)
     return loadedTasks;
 }
 
+void v_pu_update_active_task_context(uintptr_t context)
+{
+    activeTask->context = context;
+}
+
 void v_pu_check_if_active_task_in_bounds(void)
 {
     if ((uintptr_t)activeTask->context >= (uintptr_t)activeTask->memory.begin &&
