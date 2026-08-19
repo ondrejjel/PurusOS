@@ -7,7 +7,7 @@
 #include <scheduler.h>
 #include <task.h>
 
-void useInterface(const KernelInterface_t *interface)
+void selectKernelInterface(const KernelInterface_t *interface)
 {
     v_pu_kernel_use_interface(interface);
 }
