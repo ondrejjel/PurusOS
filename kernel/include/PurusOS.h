@@ -4,9 +4,16 @@
 #include <stddef.h>
 #include <kernel_interface.h>
 
+/* Selects and validates the architecture-provided kernel interface. */
 void selectKernelInterface(const KernelInterface_t *interface);
+
+/* Starts kernel execution using the first loaded task. */
 void startKernel(void);
+
+/* Creates a new task and loads it into the scheduler. */
 void newTask(void (*task)(void *arg), void *arguments, size_t stackSize);
+
+/* Saves the current task and switches execution to the next task. */
 void taskYield(void);
 
 #endif /* PU_PURUSOS_H */

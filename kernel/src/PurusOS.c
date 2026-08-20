@@ -7,16 +7,23 @@
 #include <scheduler.h>
 #include <task.h>
 
+/* Activates the architecture-provided kernel interface. */
 void selectKernelInterface(const KernelInterface_t *interface)
 {
     v_pu_kernel_use_interface(interface);
 }
 
+/*
+ * Starts the kernel by selecting the first loaded task and restoring its
+ * initial execution context. No task can be scheduled if the task list is
+ * empty.
+ */
 void startKernel(void)
 {
     if (s_pu_get_loaded_task_count() != 0)
     {
         v_pu_set_initial_task();
+
         uintptr_t initialContext = uptr_pu_get_active_task_context();
         v_pu_task_context_restore(initialContext);
     }
@@ -26,17 +33,28 @@ void startKernel(void)
     }
 }
 
+/*
+ * Creates a task and submits its TCB to the scheduler.
+ * Task validation and memory/context initialization are handled by the
+ * task and scheduler layers respectively.
+ */
 void newTask(void (*task)(void *arg), void *arguments, size_t stackSize)
 {
     TCB_t tcb = x_pu_create_task(task, arguments, stackSize);
     v_pu_load_task(tcb);
 }
 
+/*
+ * Saves the current task context, updates its TCB, selects the next task,
+ * and restores the selected task's saved context.
+ */
 void taskYield(void)
 {
     uintptr_t savedContext = uptr_pu_task_context_save();
     v_pu_update_active_task_context(savedContext);
+
     v_pu_choose_next_task();
+
     uintptr_t newContext = uptr_pu_get_active_task_context();
     v_pu_task_context_restore(newContext);
 }
