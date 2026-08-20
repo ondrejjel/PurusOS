@@ -82,6 +82,7 @@ AS_FLAGS := \
 LD_FLAGS := \
 	$(CPU_FLAGS) \
 	-specs=nano.specs \
+	--specs=nosys.specs \
 	-T$(SOC_DIR)/linker/$(LINKER_SCRIPT).ld \
 	-Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--gc-sections
 
