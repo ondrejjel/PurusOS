@@ -7,25 +7,39 @@
 #include <fault_code.h>
 
 /*
- * Kernel interface active instance with high trust.
- * Wrappers call functions from here.
+ * Fully validated kernel interface used by kernel wrappers.
+ * This instance is activated only after all required callbacks pass validation.
  */
 static KernelInterface_t activeInterface = {0};
 
+static void (*activeFaultTrap)(uint32_t faultCode, bool isAtRuntime);
+
 /*
- * Highest-trust failure path.
- * Passes the fault code and runtime state to the architecture layer.
+ * Highest-trust kernel failure path.
+ * Passes the fault to the architecture layer and guarantees that execution
+ * cannot continue even if the architecture fault handler unexpectedly returns.
  */
 _Noreturn void v_pu_fault_trap(uint32_t faultCode, bool isAtRuntime)
 {
-    activeInterface.fault_trap(faultCode, isAtRuntime);
+    activeFaultTrap(faultCode, isAtRuntime);
     for (;;)
     {
     }
 }
 
 /*
- * Arch specific task related functions.
+ * Emergency halt path used when the kernel cannot safely invoke the fault
+ * handler, such as before a valid fault handler has been established.
+ */
+_Noreturn void v_pu_kernel_emergency_halt(void)
+{
+    for (;;)
+    {
+    }
+}
+
+/*
+ * Architecture-specific task context wrappers.
  */
 
 /* Saves the current context and returns its opaque stack pointer. */
@@ -47,40 +61,45 @@ uintptr_t uptr_pu_task_context_create(MemoryBlock_t memory, const Task_t *task)
 }
 
 /*
- * Validates and activates an architecture-provided kernel interface.
- * The active interface is updated only after all required functions pass validation.
+ * Independently validated fault handler used during interface initialization.
+ * Stored separately because activeInterface cannot be trusted until validation
+ * has completed.
  */
 void v_pu_kernel_use_interface(const KernelInterface_t *interface)
 {
+    /*
+     * Validates and activates an architecture-provided kernel interface.
+     * The fault handler is established first so validation failures can be
+     * reported safely. The complete interface is activated only after all
+     * required callbacks pass validation.
+     */
+
     /* Cannot safely invoke the fault trap without a valid interface. */
     if (interface == NULL)
     {
-        for (;;)
-        {
-        }
+        v_pu_kernel_emergency_halt();
     }
 
     /* Cannot safely continue without a valid fault trap. */
     if (interface->fault_trap == NULL)
     {
-        for (;;)
-        {
-        }
+        v_pu_kernel_emergency_halt();
     }
+    activeFaultTrap = interface->fault_trap;
 
     if (interface->context_create == NULL)
     {
-        interface->fault_trap(PU_KERNEL_INTERFACE_CONTEXT_CREATE_INVALID, false);
+        v_pu_fault_trap(PU_KERNEL_INTERFACE_CONTEXT_CREATE_INVALID, false);
     }
 
     if (interface->context_restore == NULL)
     {
-        interface->fault_trap(PU_KERNEL_INTERFACE_CONTEXT_RESTORE_INVALID, false);
+        v_pu_fault_trap(PU_KERNEL_INTERFACE_CONTEXT_RESTORE_INVALID, false);
     }
 
     if (interface->context_save == NULL)
     {
-        interface->fault_trap(PU_KERNEL_INTERFACE_CONTEXT_SAVE_INVALID, false);
+        v_pu_fault_trap(PU_KERNEL_INTERFACE_CONTEXT_SAVE_INVALID, false);
     }
 
     /* All checks passed; activate the interface. */
