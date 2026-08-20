@@ -14,6 +14,7 @@ static uint16_t taskId = 0;
 static size_t activeTaskIndex = 0;
 static TCB_t *activeTask = NULL;
 
+/* Validates that a TCB contains all fields required by the scheduler. */
 static bool check_tcb(const TCB_t *tcb)
 {
     if (tcb->context == 0)
@@ -35,6 +36,7 @@ static bool check_tcb(const TCB_t *tcb)
     return true;
 }
 
+/* Validates and loads a task into the ready queue if capacity is available. */
 void v_pu_load_task(TCB_t task)
 {
     if (loadedTasks < PU_MAXIMUM_TASK_COUNT)
@@ -58,10 +60,7 @@ void v_pu_load_task(TCB_t task)
     }
 }
 
-TCB_t x_pu_get_active_task(void)
-{
-    return *activeTask;
-}
+/* Active task and scheduler state accessors. */
 
 uintptr_t uptr_pu_get_active_task_context(void)
 {
@@ -78,11 +77,13 @@ size_t s_pu_get_loaded_task_count(void)
     return loadedTasks;
 }
 
+/* Updates the active task's saved context before a context switch. */
 void v_pu_update_active_task_context(uintptr_t context)
 {
     activeTask->context = context;
 }
 
+/* Verifies that the active task's saved context remains within its allocated memory. */
 void v_pu_check_if_active_task_in_bounds(void)
 {
     if ((uintptr_t)activeTask->context >= (uintptr_t)activeTask->memory.begin &&
@@ -93,12 +94,14 @@ void v_pu_check_if_active_task_in_bounds(void)
     v_pu_fault_trap(PU_SCHEDULER_TASK_OUT_OF_BOUNDS, true);
 }
 
+/* Selects the first task explicitly before round-robin scheduling begins. */
 void v_pu_set_initial_task(void)
 {
     activeTask = &readyTasks[0];
     activeTask->state = RUNNING;
 }
 
+/* Selects the next task using round-robin scheduling. */
 void v_pu_choose_next_task(void)
 {
     activeTask->state = READY;
