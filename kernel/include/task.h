@@ -12,7 +12,7 @@
 typedef struct
 {
     void (*function)(void *);
-    void *argument;
+    void *arguments;
 } Task_t;
 
 /*

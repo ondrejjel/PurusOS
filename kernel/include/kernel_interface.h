@@ -30,7 +30,7 @@ void v_pu_fault_trap(uint32_t faultCode, bool isAtRuntime);
 
 void v_pu_kernel_emergency_halt(void);
 
-uintptr_t uptr_pu_task_context_save();
+uintptr_t uptr_pu_task_context_save(void);
 
 void v_pu_task_context_restore(uintptr_t context);
 
