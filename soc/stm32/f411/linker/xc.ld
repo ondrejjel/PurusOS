@@ -40,7 +40,7 @@ MEMORY
 /* -------------------------------------------------------------------------- */
 
 /* Maximum combined .data + .bss allocation. */
-DATA_BSS_SIZE = 65K;
+DATA_BSS_SIZE = 64K;
 
 /* Reserved RAM regions. */
 BSS_GUARD_SIZE     = 512;
