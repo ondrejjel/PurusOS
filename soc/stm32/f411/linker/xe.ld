@@ -1,11 +1,11 @@
 ENTRY(Reset_Handler)
 
 /*
- * PurusOS linker script for stm32f411xe
+ * PurusOS linker script for STM32F411xE
  *
- * RAM layout
+ * Physical RAM layout
  *
- * Low address
+ * LOW ADDRESS
  *
  *   .data / .bss
  *   BSS guard
@@ -14,13 +14,22 @@ ENTRY(Reset_Handler)
  *   Kernel runtime region
  *   Kernel guard
  *   General-purpose RAM
- *   Startup guard
+ *   General guard
  *   Startup stack
+ *   Startup guard
+ *   Unallocated RAM
  *
- * High address
+ * HIGH ADDRESS
  *
- * The startup stack begins at _estack and is abandoned once
- * Reset_Handler transfers execution to the kernel stack.
+ *
+ * The startup stack grows downward from _estartup.
+ * The kernel stack grows downward from _ekernel.
+ *
+ * The task memory pool is managed by the kernel allocator.
+ *
+ * Guard regions are reserved RAM placed between independently
+ * managed regions. They provide a physical separation that can
+ * later be inspected for overflow/corruption.
  */
 
 
@@ -42,15 +51,27 @@ MEMORY
 /* Maximum combined .data + .bss allocation. */
 DATA_BSS_SIZE = 64K;
 
-/* Reserved RAM regions. */
-BSS_GUARD_SIZE     = 512;
-MEMPOOL_SIZE       = 48K;
-MEMPOOL_GUARD_SIZE = 512;
-KERNEL_SIZE        = 8K;
-KERNEL_GUARD_SIZE  = 512;
-GENERAL_SIZE       = 4K;
-STARTUP_GUARD_SIZE = 512;
-STARTUP_SIZE       = 1K;
+/* Task memory pool. */
+MEMPOOL_SIZE = 48K;
+
+/* Kernel runtime region. */
+KERNEL_SIZE = 8K;
+
+/* General-purpose scratch/workspace region. */
+GENERAL_SIZE = 4K;
+
+/* Temporary startup stack. */
+STARTUP_SIZE = 1K;
+
+/* Minimum amount of intentionally unallocated RAM. */
+MIN_FREE_RAM = 1K;
+
+/* Guard regions. */
+BSS_GUARD_SIZE     = 256;
+MEMPOOL_GUARD_SIZE = 256;
+KERNEL_GUARD_SIZE  = 256;
+GENERAL_GUARD_SIZE = 256;
+STARTUP_GUARD_SIZE = 256;
 
 
 /* -------------------------------------------------------------------------- */
@@ -58,24 +79,30 @@ STARTUP_SIZE       = 1K;
 /* -------------------------------------------------------------------------- */
 
 /*
- * Top of RAM.
+ * Physical end of SRAM.
  *
- * Reset_Handler initially uses this address as the stack pointer.
+ * This is the highest valid RAM address + 1.
+ *
+ * _estack is NOT the startup stack pointer.
+ * The startup code uses _estartup instead.
  */
 _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 
 /* -------------------------------------------------------------------------- */
-/* Flash sections                                                             */
+/* Sections                                                                   */
 /* -------------------------------------------------------------------------- */
 
 SECTIONS
 {
+    /* ====================================================================== */
+    /* FLASH                                                                   */
+    /* ====================================================================== */
+
     /*
-     * Cortex-M interrupt vector table.
+     * Interrupt vector table.
      *
-     * This must be the first section in Flash because the processor
-     * expects the vector table at the beginning of the image.
+     * Cortex-M expects the vector table at the beginning of the image.
      */
     .isr_vector :
     {
@@ -103,23 +130,25 @@ SECTIONS
     } > FLASH
 
 
-    /* ---------------------------------------------------------------------- */
-    /* RAM data sections                                                      */
-    /* ---------------------------------------------------------------------- */
+    /* ====================================================================== */
+    /* INITIALIZED / ZERO-INITIALIZED RAM                                    */
+    /* ====================================================================== */
 
     /*
      * Flash address containing the initial contents of .data.
      *
-     * Reset_Handler copies this data from Flash into SRAM.
+     * Reset_Handler copies:
+     *
+     *     _sidata -> _sdata ... _edata
      */
     _sidata = LOADADDR(.data);
 
 
     /*
-     * Initialized global/static variables.
+     * Initialized global and static variables.
      *
-     * VMA: SRAM
-     * LMA: Flash
+     * VMA: RAM
+     * LMA: FLASH
      */
     .data :
     {
@@ -137,9 +166,11 @@ SECTIONS
 
 
     /*
-     * Zero-initialized global/static variables.
+     * Zero-initialized global and static variables.
      *
-     * Reset_Handler clears this region before calling main().
+     * Reset_Handler clears:
+     *
+     *     _sbss -> _ebss
      */
     .bss :
     {
@@ -160,20 +191,28 @@ SECTIONS
 
 
     /*
-     * The combined .data + .bss allocation is deliberately bounded.
+     * Prevent .data + .bss from consuming the RAM reserved for
+     * the rest of the PurusOS runtime.
      */
     ASSERT(
         (_ebss - _sdata) <= DATA_BSS_SIZE,
-           "Error: Combined .data and .bss size exceeds DATA_BSS_SIZE!"
+           "Error: .data + .bss exceeds DATA_BSS_SIZE!"
     )
 
 
-    /* ---------------------------------------------------------------------- */
-    /* PurusOS runtime RAM                                                    */
-    /* ---------------------------------------------------------------------- */
+    /* ====================================================================== */
+    /* PURUSOS RUNTIME RAM                                                    */
+    /* ====================================================================== */
 
     /*
-     * Guard between .bss and the task memory pool.
+     * ------------------------------------------------------------------------
+     * BSS GUARD
+     * ------------------------------------------------------------------------
+     *
+     * Separates global/static RAM from the task memory pool.
+     *
+     * The task memory pool grows upward from _smempool.
+     * Its lower boundary is therefore protected by this guard.
      */
     .bss_guard (NOLOAD) :
     {
@@ -190,9 +229,15 @@ SECTIONS
 
 
     /*
-     * Task memory pool.
+     * ------------------------------------------------------------------------
+     * TASK MEMORY POOL
+     * ------------------------------------------------------------------------
      *
-     * Task stacks and other task-owned memory are allocated from here.
+     * Memory allocated to tasks, primarily for their stacks.
+     *
+     * The allocator operates only inside:
+     *
+     *     [_smempool, _emempool)
      */
     .mempool (NOLOAD) :
     {
@@ -209,7 +254,11 @@ SECTIONS
 
 
     /*
-     * Guard between the task memory pool and kernel runtime memory.
+     * ------------------------------------------------------------------------
+     * MEMPOOL GUARD
+     * ------------------------------------------------------------------------
+     *
+     * Separates task-owned memory from kernel runtime memory.
      */
     .mempool_guard (NOLOAD) :
     {
@@ -226,13 +275,17 @@ SECTIONS
 
 
     /*
-     * Kernel runtime memory.
+     * ------------------------------------------------------------------------
+     * KERNEL RUNTIME REGION
+     * ------------------------------------------------------------------------
      *
-     * This region contains the permanent kernel stack and may also
-     * contain scheduler state, TCB storage, and future kernel workspace.
+     * Permanent kernel stack and kernel runtime storage.
      *
-     * _ekernel is the top of the kernel region and is therefore the
-     * address loaded into SP when the kernel takes over from startup.
+     * The kernel stack grows downward from _ekernel.
+     *
+     * Kernel code therefore initializes:
+     *
+     *     SP = _ekernel
      */
     .kernel (NOLOAD) :
     {
@@ -249,7 +302,14 @@ SECTIONS
 
 
     /*
-     * Guard between kernel runtime memory and general-purpose RAM.
+     * ------------------------------------------------------------------------
+     * KERNEL GUARD
+     * ------------------------------------------------------------------------
+     *
+     * Separates the kernel runtime region from general-purpose RAM.
+     *
+     * Separates the kernel runtime region from general-purpose RAM
+     * and provides a boundary for detecting accidental corruption.
      */
     .kernel_guard (NOLOAD) :
     {
@@ -266,10 +326,17 @@ SECTIONS
 
 
     /*
-     * General-purpose RAM.
+     * ------------------------------------------------------------------------
+     * GENERAL-PURPOSE RAM
+     * ------------------------------------------------------------------------
      *
-     * This region is not assigned to a specific subsystem and may be
-     * used by kernel/hardware code where appropriate.
+     * Temporary scratch/workspace for low-level kernel and hardware code.
+     *
+     * This is not a permanent execution stack.
+     *
+     * The region is bounded by:
+     *
+     *     [_sgeneral, _egeneral)
      */
     .general (NOLOAD) :
     {
@@ -286,34 +353,45 @@ SECTIONS
 
 
     /*
-     * Guard below the temporary startup stack.
+     * ------------------------------------------------------------------------
+     * GENERAL RAM GUARD
+     * ------------------------------------------------------------------------
+     *
+     * Separates scratch/workspace RAM from the startup stack.
      */
-    .startup_guard (NOLOAD) :
+    .general_guard (NOLOAD) :
     {
         . = ALIGN(8);
 
-        _sstartup_guard = .;
+        _sgeneral_guard = .;
 
-        . = . + STARTUP_GUARD_SIZE;
+        . = . + GENERAL_GUARD_SIZE;
 
         . = ALIGN(8);
 
-        _estartup_guard = .;
+        _egeneral_guard = .;
     } > RAM
 
 
     /*
-     * Temporary startup stack.
+     * ------------------------------------------------------------------------
+     * STARTUP STACK
+     * ------------------------------------------------------------------------
      *
-     * Reset_Handler starts with:
+     * Temporary stack used by Reset_Handler and early initialization.
      *
-     *     SP = _estack
+     * The stack grows downward.
      *
-     * and therefore uses this region while performing system
-     * initialization.
+     * Initial stack pointer:
      *
-     * Once initialization is complete, the stack is abandoned and
-     * SP is changed to _ekernel.
+     *     SP = _estartup
+     *
+     * The startup stack must remain inside:
+     *
+     *     [_sstartup, _estartup)
+     *
+     * Once startup has finished, SP is moved to _ekernel and this
+     * stack is abandoned.
      */
     .startup (NOLOAD) :
     {
@@ -329,25 +407,52 @@ SECTIONS
     } > RAM
 
 
-    /* ---------------------------------------------------------------------- */
-    /* Final RAM boundary                                                     */
-    /* ---------------------------------------------------------------------- */
+    /*
+     * ------------------------------------------------------------------------
+     * STARTUP GUARD
+     * ------------------------------------------------------------------------
+     *
+     * Separates the temporary startup stack from the unallocated
+     * RAM at the physical top of SRAM.
+     *
+     * A downward-growing startup stack must never cross this boundary.
+     */
+    .startup_guard (NOLOAD) :
+    {
+        . = ALIGN(8);
+
+        _sstartup_guard = .;
+
+        . = . + STARTUP_GUARD_SIZE;
+
+        . = ALIGN(8);
+
+        _estartup_guard = .;
+    } > RAM
+
+
+    /* ====================================================================== */
+    /* UNALLOCATED RAM                                                        */
+    /* ====================================================================== */
 
     /*
-     * End of all statically assigned RAM.
+     * Leave a small amount of SRAM completely unassigned.
      *
-     * This should coincide with _estack for the current fixed layout.
+     * This space is intentionally not represented by a section.
+     *
+     * It exists as a safety margin between the fixed PurusOS layout
+     * and the physical end of SRAM.
+     *
+     * The actual size is checked below.
      */
-    . = ALIGN(8);
+    _end = ALIGN(8);
 
-    _end = .;
-
-    PROVIDE(end = .);
+    PROVIDE(end = _end);
 
 
-    /* ---------------------------------------------------------------------- */
-    /* Unwanted sections                                                      */
-    /* ---------------------------------------------------------------------- */
+    /* ====================================================================== */
+    /* UNWANTED SECTIONS                                                      */
+    /* ====================================================================== */
 
     /DISCARD/ :
     {
@@ -360,13 +465,21 @@ SECTIONS
 
 
 /* -------------------------------------------------------------------------- */
-/* Link-time safety checks                                                    */
+/* RAM layout checks                                                          */
 /* -------------------------------------------------------------------------- */
 
 /*
- * Every statically assigned RAM section must fit inside the physical RAM.
+ * The complete fixed layout must fit inside physical SRAM.
  */
 ASSERT(
     _end <= _estack,
     "Error: PurusOS RAM layout exceeds available SRAM!"
+)
+
+/*
+ * There must be at least minimum of undedicated SRAM left.
+ */
+ASSERT(
+    _estack - _end >= MIN_FREE_RAM,
+    "Error: not enough free SRAM!"
 )
