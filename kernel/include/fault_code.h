@@ -43,4 +43,9 @@
 
 #define PU_KERNEL_NO_TASK_TO_RUN (KERNEL_FAULT_BASE + 0x01U)
 
+/* Mailbox fault codes */
+#define MAILBOX_FAULT_BASE (0x06U << 16)
+
+#define PU_MAILBOX_INVALID_ID (MAILBOX_FAULT_BASE + 0x01U)
+
 #endif /* PU_FAULT_CODE_H */
