@@ -6,6 +6,22 @@
 #include <PurusOS.h>
 #include <scheduler.h>
 #include <task.h>
+#include <mailbox.h>
+
+Mail_t readMailbox(size_t id)
+{
+    return x_pu_read_mailbox(id);
+}
+
+void clearMailbox(size_t id)
+{
+    v_pu_clear_mailbox(id);
+}
+
+void writeMailbox(size_t id, uintptr_t data, uintptr_t metadata)
+{
+    v_pu_write_mailbox(id, data, metadata);
+}
 
 /* Activates the architecture-provided kernel interface. */
 void selectKernelInterface(const KernelInterface_t *interface)

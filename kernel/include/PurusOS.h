@@ -3,6 +3,13 @@
 
 #include <stddef.h>
 #include <kernel_interface.h>
+#include <mailbox.h>
+
+Mail_t readMailbox(size_t id);
+
+void clearMailbox(size_t id);
+
+void writeMailbox(size_t id, uintptr_t data, uintptr_t metadata);
 
 /* Selects and validates the architecture-provided kernel interface. */
 void selectKernelInterface(const KernelInterface_t *interface);
