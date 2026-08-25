@@ -5,10 +5,19 @@
 #include <kernel_interface.h>
 #include <mailbox.h>
 
+/*
+ * Reads the contents of a mailbox identified by its ID.
+ */
 Mail_t readMailbox(size_t id);
 
+/*
+ * Clears the data and metadata stored in a mailbox identified by its ID.
+ */
 void clearMailbox(size_t id);
 
+/*
+ * Writes data and metadata to a mailbox identified by its ID.
+ */
 void writeMailbox(size_t id, uintptr_t data, uintptr_t metadata);
 
 /* Selects and validates the architecture-provided kernel interface. */

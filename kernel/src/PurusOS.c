@@ -8,16 +8,25 @@
 #include <task.h>
 #include <mailbox.h>
 
+/*
+ * Reads the contents of a mailbox through the kernel mailbox interface.
+ */
 Mail_t readMailbox(size_t id)
 {
     return x_pu_read_mailbox(id);
 }
 
+/*
+ * Clears a mailbox through the kernel mailbox interface.
+ */
 void clearMailbox(size_t id)
 {
     v_pu_clear_mailbox(id);
 }
 
+/*
+ * Writes data and metadata to a mailbox through the kernel mailbox interface.
+ */
 void writeMailbox(size_t id, uintptr_t data, uintptr_t metadata)
 {
     v_pu_write_mailbox(id, data, metadata);
