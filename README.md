@@ -1,148 +1,178 @@
 # PurusOS
 
-PurusOS is a personal bare-metal RTOS project built around one main idea:
+PurusOS is a personal bare-metal kernel development project built around one central objective:
 
-> **If I want to understand how something works, I should try building it myself.**
+> **Understand how a computer system works by building its fundamental components from the ground up.**
 
-It targets the **STM32F411CEU6 Black Pill**, using an **ARM Cortex-M4**, and is built from the hardware level upward without relying on an existing RTOS or large hardware abstraction framework.
+The project targets the **STM32F411CEU6 Black Pill**, based on the **ARM Cortex-M4** architecture. It aims to develop a kernel from scratch, starting with the processor's hardware capabilities and gradually building the software infrastructure required to support higher-level functionality.
 
-PurusOS is not intended to compete with established RTOS projects or become a production-ready operating system. Its purpose is to explore systems programming by building the pieces myself and understanding what is happening underneath the abstractions that normally hide the hardware.
+PurusOS does not aim to compete with established operating systems or become a production-ready kernel. Its primary purpose is educational: to explore kernel development, computer architecture, low-level programming, and the relationship between hardware and software through practical implementation.
 
 ## Why I Created PurusOS
 
-I started PurusOS because I wanted to learn systems programming by actually building a system rather than only using existing ones.
+I started PurusOS because I wanted to understand systems programming beyond the level of using existing libraries, frameworks, and operating-system interfaces.
 
-It is possible to use an RTOS, scheduler, memory manager, hardware abstraction layer, or operating-system component without ever needing to understand what is happening underneath. PurusOS is my way of approaching the problem from the opposite direction.
+Modern software relies on numerous abstractions that make development easier but often hide the mechanisms responsible for making the system work. Memory management, processor state, exception handling, scheduling, startup procedures, and hardware interaction are examples of functionality that can be used without necessarily understanding their underlying implementation.
 
-Rather than simply reading about tasks, memory, context switching, scheduling, startup code, and hardware interfaces, I want to encounter the problems involved in building them myself.
+PurusOS approaches these concepts from the opposite direction.
 
-The project has become a way for me to explore how software interacts with a microcontroller at a much lower level than I had previously worked with.
+Rather than building applications on top of an existing kernel, I want to understand what is required to create the kernel itself. This involves exploring the hardware, designing the necessary software interfaces, implementing fundamental kernel functionality, and understanding how individual components interact.
 
-More importantly, I want to be able to look at a feature and understand what it needs from the hardware, how the different layers communicate, and why the system behaves the way it does.
+The project provides an opportunity to encounter these problems directly, make architectural decisions, evaluate their consequences, and improve the implementation as my understanding develops.
 
-## Learning Philosophy
+## Development Philosophy
 
-PurusOS is intentionally a learning project.
+PurusOS is intentionally an educational project.
 
-The goal is not to produce the most efficient scheduler, the most sophisticated allocator, or the most portable RTOS. The goal is to understand the concepts behind them well enough to make informed design decisions.
+The primary objective is not to achieve maximum performance, portability, or feature completeness. Instead, the focus is on understanding the fundamental concepts behind operating-system and kernel development.
 
 My general principle is:
 
-> **Build it yourself first, so you can understand what the abstraction is actually doing.**
+> **Understand the abstraction before relying on it.**
 
-If something normally comes from a library, framework, HAL, or existing operating-system component, I want to understand what would actually be required to build that layer myself.
+This does not mean avoiding existing documentation, tools, or standardized definitions. Architecture manuals, datasheets, debugging utilities, and established specifications are essential resources.
 
-This does not mean avoiding existing software or documentation. Datasheets, architecture manuals, debugging tools, and existing implementations are valuable learning resources. The important distinction is that I do not want to treat an existing implementation as a black box simply because it already works.
+For example, PurusOS will use **CMSIS headers** to provide standardized processor and peripheral register definitions. These headers describe the hardware interfaces; they do not replace the kernel implementation or introduce an existing hardware abstraction layer.
 
-PurusOS is also deliberately incremental. Some parts are simpler than they would be in a mature RTOS, and that is intentional. I would rather understand a smaller system completely before introducing additional complexity.
+Similarly, existing implementations can serve as useful references, but the objective remains to understand and implement the underlying functionality independently.
+
+Development is deliberately incremental. I prefer implementing a smaller, understandable system before introducing additional complexity. Architectural decisions should follow actual requirements rather than attempting to reproduce the feature set of a mature operating system.
 
 ## Platform and Technologies
 
-PurusOS currently targets the **STM32F411CEU6 Black Pill**, based on an **ARM Cortex-M4** processor.
+PurusOS currently targets the **STM32F411CEU6 Black Pill**, featuring an **ARM Cortex-M4** processor.
 
 The project uses:
 
-* C
-* ARM assembly
-* `arm-none-eabi-gcc`
-* GDB
-* OpenOCD
-* Custom linker scripts
-* A custom build system
-* Bare-metal hardware access
+- C
+- ARM assembly
+- CMSIS headers
+- `arm-none-eabi-gcc`
+- GDB
+- OpenOCD
+- Custom linker scripts
+- A custom build system
+- Bare-metal hardware access
 
-The project does not use STM32CubeIDE, CubeMX, or the STM32 HAL, and the kernel is not built on top of an existing RTOS.
+The project does not rely on STM32 HAL, STM32CubeIDE, CubeMX, or an existing RTOS.
 
-The hardware is an important part of the project because it gives the software somewhere real to run. Concepts such as memory layout, stacks, processor state, startup, exceptions, and context switching become much less abstract when they have to work on an actual microcontroller.
+CMSIS is used as a standardized interface for processor and peripheral definitions, while the kernel's functionality and architecture-specific implementations are developed independently.
 
-## What I Am Exploring
+The hardware platform is an essential part of the project. It provides a real environment in which concepts such as memory layout, processor state, exception handling, startup, and context switching must work correctly.
 
-PurusOS brings together many areas of systems and embedded programming, including:
+## Areas of Exploration
 
-* Bare-metal embedded development
-* ARM Cortex-M architecture
-* C programming at a low level
-* ARM assembly and C/assembly interaction
-* Startup and low-level system initialization
-* Linker scripts and memory layout
-* Memory management
-* Task management
-* Scheduling
-* Context management and context switching
-* Fault handling
-* Hardware/software interfaces
-* Embedded debugging
-* Binary and disassembly analysis
-* Designing boundaries between hardware, architecture, kernel, and application code
+PurusOS explores several interconnected areas of systems and embedded programming:
 
-The project is intentionally broad. One of its main purposes is to understand how these areas connect rather than studying each one as an isolated topic.
+- Bare-metal development
+- ARM Cortex-M architecture
+- Kernel architecture and design
+- Low-level C programming
+- ARM assembly and C/assembly interaction
+- Processor initialization and startup
+- Linker scripts and memory layout
+- Memory management
+- Task management
+- Scheduling
+- Context management and context switching
+- Exception and fault handling
+- Hardware/software interfaces
+- Kernel and architecture boundaries
+- Embedded debugging
+- Binary analysis and disassembly
+- Designing interfaces between hardware, architecture, kernel, and application layers
 
-## Building From the Hardware Up
+The objective is not simply to implement these components independently, but to understand how they interact and contribute to the operation of a complete system.
 
-One of the defining aspects of PurusOS is the direction in which I approach the system.
+## Building a Kernel From Scratch
 
-Instead of starting with an existing RTOS and learning its API, I start with the processor and build the software layers above it.
+A defining characteristic of PurusOS is its bottom-up development approach.
 
-The general idea is:
+Rather than starting with an existing operating system, the project begins with the processor and develops the software infrastructure above it.
+
+The general architectural direction is:
 
 ```text
 Hardware
 ↓
-Architecture
+CMSIS / Hardware Definitions
+↓
+Architecture Layer
 ↓
 Kernel
 ↓
-Application
+Applications
 ```
 
-This makes the boundaries between the different parts of the system something I have to understand rather than something that is simply given to me.
+Each layer has its own responsibilities and interfaces.
 
-It also means that abstractions have to be justified by the problems they solve. PurusOS deliberately separates hardware-specific and architecture-specific behavior from the kernel where doing so makes the system easier to understand and reason about.
+The hardware provides the underlying capabilities. CMSIS supplies standardized definitions for accessing processor and peripheral functionality. The architecture layer handles processor-specific mechanisms, while the kernel implements the general functionality required to manage the system.
 
-At the same time, I am not treating abstraction as an end in itself. Part of the learning process is discovering where an abstraction is useful, where it becomes unnecessary complexity, and what trade-offs it introduces.
+This separation is important because it distinguishes hardware-specific implementation details from kernel-level functionality.
 
-## Why Not Just Use an Existing RTOS?
+The intention is to develop a system in which the individual layers are understandable, their responsibilities are clearly defined, and their interactions are deliberate.
 
-Existing RTOS projects are much more mature and capable than PurusOS, and using one would make sense for an actual application.
+Abstraction is not an objective by itself. Its usefulness should be determined by the problems it solves and the complexity it introduces.
 
-That is not the purpose here.
+## Why Not Use an Existing Kernel?
 
-Using an existing RTOS would teach me how to **use** an RTOS. Building PurusOS teaches me more about **why an RTOS needs the things it has**.
+Established kernels and RTOS implementations are considerably more mature, reliable, and feature-complete than PurusOS.
 
-The development process itself becomes part of the learning material. I get to encounter the problems that an RTOS actually has to solve, make design decisions, discover where those decisions fail, and redesign parts of the system when my understanding changes.
+Using one would be the appropriate choice for most practical applications.
 
-That makes PurusOS considerably slower and less practical than using an established RTOS, but that is intentional.
+However, PurusOS has a different objective.
+
+Using an existing kernel primarily teaches how to interact with its interfaces and functionality. Developing one from scratch provides an opportunity to understand why those interfaces exist, what problems the underlying components solve, and how the system operates internally.
+
+The development process itself is an important part of the project.
+
+Implementing functionality, encountering architectural limitations, investigating unexpected behavior, and redesigning components are all valuable parts of the learning experience.
+
+This approach is considerably slower than building on existing infrastructure, but that trade-off is intentional.
 
 ## Current Status
 
-The **core PurusOS kernel is functionally complete**.
+The **initial kernel foundation is functionally complete**.
 
-The project currently has foundations for task management, scheduling, memory management, kernel/architecture interfaces, fault handling, context management, and kernel orchestration.
+The project has established foundations for task management, scheduling, memory management, kernel/architecture interfaces, fault handling, context management, and kernel orchestration.
 
-The project is now moving deeper into the low-level hardware and startup layers. The immediate focus is on replacing the temporary startup implementation with a properly understood ARM Cortex-M startup sequence and validating the complete system through compilation, disassembly, debugging, and hardware testing.
+The current development direction focuses on strengthening the low-level hardware and startup infrastructure.
 
-Some optional hardening and more advanced features are intentionally being left for later rather than being added simply for completeness.
+Particular attention is being given to implementing and understanding the ARM Cortex-M startup sequence, integrating CMSIS definitions, and validating the system through compilation, disassembly, debugging, and hardware testing.
 
-PurusOS is still an active learning project, so its architecture is expected to continue evolving as my understanding improves.
+Additional functionality and optional hardening will be introduced incrementally as the underlying architecture develops.
 
-## What Comes Next
+PurusOS remains an active project, and its architecture is expected to evolve as new requirements and a deeper understanding emerge.
 
-PurusOS is intended to remain a long-term learning project while also providing a foundation for a future, more ambitious project called **VuxionOS**.
+## Future Direction: VuxionOS
 
-VuxionOS will allow me to explore ideas that go beyond the deliberately simple design of PurusOS, potentially including a more ARM-focused architecture, preemptive scheduling, hardware-assisted protection, more advanced context management, and more sophisticated memory and scheduling systems.
+PurusOS is also intended to serve as a foundation for a future, more ambitious project called **VuxionOS**.
 
-The important part is that VuxionOS will be approached with the knowledge gained from building PurusOS.
+While PurusOS focuses on understanding and implementing fundamental kernel components, VuxionOS will provide an opportunity to explore more advanced operating-system concepts and architectural approaches.
 
-PurusOS is where I am learning what the fundamental pieces of an RTOS actually are and what problems they have to solve. VuxionOS will be an opportunity to take that understanding further and make more informed architectural choices.
+Potential areas of exploration include:
+
+- More advanced ARM architecture support
+- Preemptive scheduling
+- Hardware-assisted memory protection
+- Advanced context management
+- More sophisticated memory management
+- Improved scheduling mechanisms
+
+The knowledge gained through PurusOS will provide the foundation for making more informed architectural decisions when developing VuxionOS.
+
+PurusOS is therefore not simply an isolated experiment, but an important step in a longer-term exploration of operating-system development.
 
 ## A Learning Project, Not a Product
 
-PurusOS is not intended to compete with established operating systems or RTOS projects.
+PurusOS is not intended to compete with established kernels or operating systems.
 
-It is a personal experiment in understanding how computer systems work at a level where abstractions eventually disappear.
+It is a personal exploration of computer systems at a level where the abstractions normally taken for granted must be implemented and understood.
 
-The project will contain mistakes, redesigns, experiments, and decisions that would probably be made differently in a mature production system. Those are not failures of the project; they are part of the reason I am building it.
+The project will inevitably involve mistakes, experiments, redesigns, and architectural decisions that might differ from those made in mature production systems.
 
-The most important result of PurusOS is not the final RTOS.
+These are expected parts of the development process.
 
-It is understanding **why it works**.
+The most important outcome of PurusOS is not the number of features implemented or the complexity of the resulting kernel.
+
+It is the understanding gained by building the system and discovering **why it works**.
