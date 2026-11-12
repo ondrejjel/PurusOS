@@ -2,9 +2,11 @@
 
 PurusOS is a personal bare-metal kernel development project built around one central objective:
 
-> **Understand how a computer system works by building its fundamental components from the ground up.**
+> **Understand how a computer system works by building its fundamental software components from the ground up.**
 
-The project targets the **STM32F411CEU6 Black Pill**, based on the **ARM Cortex-M4** architecture. It aims to develop a kernel from scratch, starting with the processor's hardware capabilities and gradually building the software infrastructure required to support higher-level functionality.
+The project targets the **STM32F411CEU6 Black Pill**, based on the **ARM Cortex-M4** architecture. It aims to develop a kernel from scratch, starting with the processor's capabilities and gradually building the software infrastructure required to support higher-level functionality.
+
+The hardware project is generated using **STM32CubeMX** and developed within **STM32CubeIDE**, providing an established development environment, toolchain integration, hardware configuration, and debugging infrastructure.
 
 PurusOS does not aim to compete with established operating systems or become a production-ready kernel. Its primary purpose is educational: to explore kernel development, computer architecture, low-level programming, and the relationship between hardware and software through practical implementation.
 
@@ -32,9 +34,13 @@ My general principle is:
 
 This does not mean avoiding existing documentation, tools, or standardized definitions. Architecture manuals, datasheets, debugging utilities, and established specifications are essential resources.
 
-For example, PurusOS will use **CMSIS headers** to provide standardized processor and peripheral register definitions. These headers describe the hardware interfaces; they do not replace the kernel implementation or introduce an existing hardware abstraction layer.
+The project uses established development tools where they provide infrastructure rather than replace the functionality being developed.
 
-Similarly, existing implementations can serve as useful references, but the objective remains to understand and implement the underlying functionality independently.
+For example, **STM32CubeMX** is used to configure and generate the hardware project, while **STM32CubeIDE** provides the integrated development environment, ARM GNU toolchain, build integration, and debugging capabilities.
+
+Similarly, **CMSIS headers** provide standardized processor and peripheral definitions. These headers describe the hardware interfaces; they do not replace the kernel implementation or introduce an existing RTOS.
+
+The distinction is important: the development environment and hardware infrastructure are established components, while the kernel itself remains an independently developed implementation.
 
 Development is deliberately incremental. I prefer implementing a smaller, understandable system before introducing additional complexity. Architectural decisions should follow actual requirements rather than attempting to reproduce the feature set of a mature operating system.
 
@@ -46,17 +52,18 @@ The project uses:
 
 - C
 - ARM assembly
-- CMSIS headers
-- `arm-none-eabi-gcc`
+- CMSIS
+- STM32CubeMX
+- STM32CubeIDE
+- ARM GNU Toolchain (`arm-none-eabi-gcc`)
 - GDB
-- OpenOCD
-- Custom linker scripts
-- A custom build system
-- Bare-metal hardware access
+- STM32CubeIDE integrated debugging and flashing tools
+- STM32 device definitions and startup infrastructure
+- Custom kernel and architecture-specific implementations
 
-The project does not rely on STM32 HAL, STM32CubeIDE, CubeMX, or an existing RTOS.
+STM32CubeMX is responsible for hardware project configuration and code generation, while STM32CubeIDE serves as the primary development environment.
 
-CMSIS is used as a standardized interface for processor and peripheral definitions, while the kernel's functionality and architecture-specific implementations are developed independently.
+CMSIS provides standardized interfaces for processor and peripheral definitions, while the kernel's functionality and architecture-specific implementations are developed independently.
 
 The hardware platform is an essential part of the project. It provides a real environment in which concepts such as memory layout, processor state, exception handling, startup, and context switching must work correctly.
 
@@ -86,27 +93,27 @@ The objective is not simply to implement these components independently, but to 
 
 ## Building a Kernel From Scratch
 
-A defining characteristic of PurusOS is its bottom-up development approach.
+A defining characteristic of PurusOS is its bottom-up kernel development approach.
 
-Rather than starting with an existing operating system, the project begins with the processor and develops the software infrastructure above it.
+The project uses established hardware development infrastructure rather than attempting to recreate every aspect of the embedded development environment. However, the kernel itself is developed independently, without relying on an existing RTOS implementation.
 
 The general architectural direction is:
 
 ```text
 Hardware
-↓
-CMSIS / Hardware Definitions
-↓
+    ↓
+STM32CubeMX / CMSIS / Hardware Definitions
+    ↓
 Architecture Layer
-↓
+    ↓
 Kernel
-↓
+    ↓
 Applications
 ```
 
 Each layer has its own responsibilities and interfaces.
 
-The hardware provides the underlying capabilities. CMSIS supplies standardized definitions for accessing processor and peripheral functionality. The architecture layer handles processor-specific mechanisms, while the kernel implements the general functionality required to manage the system.
+The hardware provides the underlying capabilities. STM32CubeMX establishes the hardware configuration, while CMSIS supplies standardized definitions for accessing processor and peripheral functionality. The architecture layer handles processor-specific mechanisms, while the kernel implements the general functionality required to manage the system.
 
 This separation is important because it distinguishes hardware-specific implementation details from kernel-level functionality.
 
@@ -128,7 +135,7 @@ The development process itself is an important part of the project.
 
 Implementing functionality, encountering architectural limitations, investigating unexpected behavior, and redesigning components are all valuable parts of the learning experience.
 
-This approach is considerably slower than building on existing infrastructure, but that trade-off is intentional.
+This approach is considerably slower than building on existing kernel infrastructure, but that trade-off is intentional.
 
 ## Current Status
 
@@ -136,9 +143,9 @@ The **initial kernel foundation is functionally complete**.
 
 The project has established foundations for task management, scheduling, memory management, kernel/architecture interfaces, fault handling, context management, and kernel orchestration.
 
-The current development direction focuses on strengthening the low-level hardware and startup infrastructure.
+The current development direction focuses on strengthening the low-level hardware and startup infrastructure while transitioning the project into the STM32CubeMX and STM32CubeIDE development ecosystem.
 
-Particular attention is being given to implementing and understanding the ARM Cortex-M startup sequence, integrating CMSIS definitions, and validating the system through compilation, disassembly, debugging, and hardware testing.
+Particular attention is being given to integrating the existing kernel with the CubeMX-generated hardware project, establishing clean boundaries between generated platform infrastructure and independently developed kernel components, and validating the system through compilation, disassembly, debugging, and hardware testing.
 
 Additional functionality and optional hardening will be introduced incrementally as the underlying architecture develops.
 
